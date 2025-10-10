@@ -4,38 +4,47 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Rosslyn Paintshop</title>
+  <meta http-equiv="refresh" content="15;url=paint.html">
   <style>
-    :root{
-      --bg:#f7f7f7;
-      --text-red:#d30000;
-    }
-
     html,body{
       height:100%;
       margin:0;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      background:var(--bg);
+      background:#f7f7f7;
       display:flex;
       align-items:center;
       justify-content:center;
+      flex-direction:column;
     }
 
-    a{
-      color:var(--text-red);
-      text-decoration:none;
+    .text{
+      color:#d30000;
       font-size:2.2rem;
       font-weight:700;
       text-align:center;
-      transition: all 0.3s ease;
+      margin-bottom:1rem;
     }
 
-    a:hover{
-      color:#ff3b3b;
-      transform:scale(1.05);
+    .timer{
+      font-size:1.2rem;
+      color:#444;
     }
   </style>
+  <script>
+    let seconds = 15;
+    function countdown() {
+      const timer = document.getElementById("timer");
+      timer.textContent = `Redirecting to Paint Page in ${seconds} seconds...`;
+      if (seconds > 0) {
+        seconds--;
+        setTimeout(countdown, 1000);
+      }
+    }
+    window.onload = countdown;
+  </script>
 </head>
 <body>
-  <a href="paint.html">mothers Son Rosslyn Paintshop department</a>
+  <div class="text">mothers Son Rosslyn Paintshop department</div>
+  <div class="timer" id="timer">Redirecting to Paint Page in 15 seconds...</div>
 </body>
 </html>
