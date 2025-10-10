@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paint Booth Monitor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #111;
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #00c3ff;
+    }
+
+    .controls {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .controls input, .controls button {
+      padding: 8px 10px;
+      margin: 5px;
+      border-radius: 6px;
+      border: none;
+      font-size: 1em;
+    }
+
+    input[type="text"] {
+      width: 160px;
+    }
+
+    input[type="color"] {
+      width: 50px;
+      height: 36px;
+      vertical-align: middle;
+    }
+
+    button {
+      background: #00c3ff;
+      color: #fff;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #0094cc;
+    }
+
+    .parts-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .part-card {
+      background: #1c1c1c;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .color-box {
+      width: 80px;
+      height: 80px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      border: 2px solid #fff;
+    }
+
+    .part-name {
+      font-size: 1.2em;
+      margin-bottom: 8px;
+    }
+
+    .timer {
+      font-size: 1.5em;
+      font-weight: bold;
+      color: #00ff90;
+    }
+
+    .expired {
+      color: #ff4040;
+    }
+
+    .delete-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #ff4040;
+      border: none;
+      color: white;
+      border-radius: 6px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    .delete-btn:hover {
+      background: #cc3030;
+    }
+  </style>
+</head>
+<body>
+  <h1>Paint Booth Monitor</h1>
+
+  <!-- Manual Add Section -->
+  <div class="controls">
+    <input type="text" id="partName" placeholder="Part name" />
+    <input type="color" id="partColor" value="#ffffff" />
+    <button onclick="addManualPart()">Add Part</button>
+    <button onclick="fetchParts()">Reload from API</button>
+  </div>
+
+  <div class="parts-container" id="partsContainer">
+    <p style="text-align:center;">Loading parts...</p>
+  </div>
+
+  <script>
+    const API_URL = "https://example.com/api/paint-parts"; // Replace with your real API
+    const partsContainer = document.getElementById('partsContainer');
+    const COUNTDOWN_TIME = 90 * 60; // 1 hour 30 minutes in seconds
+    const timers = {};
+
+    async function fetchParts() {
+      partsContainer.innerHTML = "<p style='text-align:center;'>Loading parts...</p>";
+      try {
+        const response = await fetch(API_URL);
+        const parts = await response.json();
+        displayParts(parts);
+      } catch (error) {
+        partsContainer.innerHTML = "<p style='color:red;text-align:center;'>Failed to load data from API.</p>";
+        console.error(error);
+      }
+    }
+
+    function displayParts(parts) {
+      partsContainer.innerHTML = "";
+      parts.forEach((part, index) => {
+        createPartCard(part.name, part.color, index);
+      });
+    }
+
+    function createPartCard(name, color, id) {
+      const card = document.createElement('div');
+      card.className = 'part-card';
+      card.innerHTML = `
+        <button class="delete-btn" onclick="removePart(this)">X</button>
+        <div class="color-box" style="background-color:${color};"></div>
+        <div class="part-name">${name}</div>
+        <div class="timer" id="timer-${id}">01:30:00</div>
+        <button onclick="resetTimer(${id})">Reset Timer</button>
+      `;
+      partsContainer.appendChild(card);
+      startTimer(id, COUNTDOWN_TIME);
+    }
+
+    function startTimer(id, duration) {
+      let timeLeft = duration;
+      const timerElement = document.getElementById(`timer-${id}`);
+
+      timers[id] = setInterval(() => {
+        const hours = Math.floor(timeLeft / 3600);
+        const minutes = Math.floor((timeLeft % 3600) / 60);
+        const seconds = timeLeft % 60;
+
+        timerElement.textContent = 
+          `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+        if (timeLeft <= 0) {
+          clearInterval(timers[id]);
+          timerElement.textContent = "TIME UP!";
+          timerElement.classList.add("expired");
+        }
+        timeLeft--;
+      }, 1000);
+    }
+
+    function resetTimer(id) {
+      clearInterval(timers[id]);
+      startTimer(id, COUNTDOWN_TIME);
+    }
+
+    function addManualPart() {
+      const name = document.getElementById('partName').value.trim();
+      const color = document.getElementById('partColor').value;
+
+      if (!name) {
+        alert("Please enter a part name.");
+        return;
+      }
+
+      const newId = Date.now();
+      createPartCard(name, color, newId);
+
+      document.getElementById('partName').value = "";
+    }
+
+    function removePart(button) {
+      const card = button.parentElement;
+      card.remove();
+    }
+
+    // Load parts on startup
+    fetchParts();
+  </script>
+</body>
+</html>
