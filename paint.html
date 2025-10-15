@@ -128,9 +128,14 @@
 
   <script>
     const API_URL = "https://example.com/api/paint-parts"; // Replace with your real API
+    const STATUS_URL = "https://example.com/api/conveyor-status"; // API that returns { status: "running" } or { status: "stopped" }
+
     const partsContainer = document.getElementById('partsContainer');
     const COUNTDOWN_TIME = 90 * 60; // 1 hour 30 minutes in seconds
-    const timers = {};
+
+    const timers = {};   // store intervals
+    const timeLeftMap = {}; // store remaining time for each part
+    let conveyorRunning = true;
 
     async function fetchParts() {
       partsContainer.innerHTML = "<p style='text-align:center;'>Loading parts...</p>";
@@ -166,23 +171,28 @@
     }
 
     function startTimer(id, duration) {
-      let timeLeft = duration;
-      const timerElement = document.getElementById(`timer-${id}`);
+      clearInterval(timers[id]);
+      timeLeftMap[id] = duration;
 
       timers[id] = setInterval(() => {
-        const hours = Math.floor(timeLeft / 3600);
-        const minutes = Math.floor((timeLeft % 3600) / 60);
-        const seconds = timeLeft % 60;
+        if (!conveyorRunning) return; // 🚦 Pause if conveyor stopped
+
+        timeLeftMap[id]--;
+        const timerElement = document.getElementById(`timer-${id}`);
+        if (!timerElement) return;
+
+        const hours = Math.floor(timeLeftMap[id] / 3600);
+        const minutes = Math.floor((timeLeftMap[id] % 3600) / 60);
+        const seconds = timeLeftMap[id] % 60;
 
         timerElement.textContent = 
           `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-        if (timeLeft <= 0) {
+        if (timeLeftMap[id] <= 0) {
           clearInterval(timers[id]);
           timerElement.textContent = "TIME UP!";
           timerElement.classList.add("expired");
         }
-        timeLeft--;
       }, 1000);
     }
 
@@ -202,7 +212,6 @@
 
       const newId = Date.now();
       createPartCard(name, color, newId);
-
       document.getElementById('partName').value = "";
     }
 
@@ -211,8 +220,29 @@
       card.remove();
     }
 
+    // 🚦 Fetch conveyor status regularly
+    async function checkConveyorStatus() {
+      try {
+        const response = await fetch(STATUS_URL);
+        const data = await response.json();
+
+        if (data.status === "stopped" && conveyorRunning) {
+          conveyorRunning = false;
+          console.log("⛔ Conveyor stopped — timers paused");
+        } else if (data.status === "running" && !conveyorRunning) {
+          conveyorRunning = true;
+          console.log("▶ Conveyor resumed — timers running");
+        }
+      } catch (err) {
+        console.error("Failed to fetch conveyor status:", err);
+      }
+    }
+
     // Load parts on startup
     fetchParts();
+
+    // Check conveyor every 5 seconds
+    setInterval(checkConveyorStatus, 5000);
   </script>
 </body>
 </html>
